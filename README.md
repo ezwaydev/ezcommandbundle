@@ -4,7 +4,7 @@ My very first bundle to learn and test concepts of ezsystems/ezplatform.
 
 ## Install
 
-Modify your project composer.json
+Modify your project composer.json, this is not at packagist.org
 
 	"repositories" : [{
 			"type" : "vcs",
@@ -14,6 +14,10 @@ Modify your project composer.json
 Add to app/AppKernel.php
 
 	new EzWay\EzCommandBundle\EzWayEzCommandBundle(),
+	
+Require package
+
+	composer require ezway/ezcommandbundle
 	
 
 ## Commands
