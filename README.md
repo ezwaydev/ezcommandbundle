@@ -1,2 +1,3 @@
-# ezcommandbundle
-Collection of Symfony commads for ezsystems/ezplatform
+# EzWay/EzCommandBundle
+
+My very first bundle to learn and test concepts of ezsystems/ezplatform.
