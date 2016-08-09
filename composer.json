@@ -1,0 +1,15 @@
+{
+	"name" : "ezway/ezcommandbundle",
+	"description" : "Simple extension to ezsystems/ezplatform",
+	"license" : "GPL-2.0",
+	"autoload" : {
+		"psr-4" : {
+			"EzWay\\EzCommandBundle\\" : ""
+		}
+	},
+	"require" : {
+		"symfony/symfony" : "~2.8",
+		"ezsystems/ezpublish-kernel" : "^6.4@dev"
+	},
+	"minimum-stability" : "dev"
+}
