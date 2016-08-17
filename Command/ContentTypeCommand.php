@@ -12,9 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 class ContentTypeCommand extends ContainerAwareCommand
 {
     
-    const CMD_ACTION_VIEW = 1;
-    
-    private $adminUserId = 14;
+    private $adminUserId = null;
     
     private $repository;
     private $userService;
@@ -34,17 +32,17 @@ class ContentTypeCommand extends ContainerAwareCommand
             ->setDefinition(array(
             new InputOption('admin-id', '', InputOption::VALUE_REQUIRED, 'Repository administrator user id (default:14)'),
             new InputOption('group', 'g', InputOption::VALUE_REQUIRED, 'Specify Content type group'),
-            new InputOption('list', '', InputOption::VALUE_OPTIONAL, 'List content types within repository'),
+            new InputOption('identifier', '', InputOption::VALUE_REQUIRED, 'Content Type identifier'),
         ))
-            ->setDescription('Manage eZ Platform Repository content types.')
+            ->setDescription('Examine eZ Platform Repository content types.')
             ->setHelp(<<<EOF
 The <info>%command.name%</info> command will do something uncertain
 
   List content type groups
-  <info>php %command.full_name% --list</info>              
+  <info>php %command.full_name%</info>              
                 
   List content types within specific content type group
-  <info>php %command.full_name% --list --group=Content</info>
+  <info>php %command.full_name% --group=Content</info>
    
   
 EOF
@@ -56,8 +54,6 @@ EOF
         $this->userService = $this->repository->getUserService();
         $this->contentService = $this->repository->getContentService();
         $this->contentTypeService = $this->repository->getContentTypeService();
-        
-        $this->fs = $this->getContainer()->get('filesystem');
     }
     
     
@@ -71,10 +67,8 @@ EOF
         $outputIsVerbose = $output->isVerbose();
         $output = new SymfonyStyle($input, $output);
         
-        // default content type group
         $contentTypeGroupIdentifier = null;
-        
-        $action = self::CMD_ACTION_VIEW;
+        $contentTypeIdentifier = null;
         
         if (null !== $input->getOption('admin-id')) {
             $admin_id = intval($input->getOption('admin-id'));
@@ -88,19 +82,20 @@ EOF
             $contentTypeGroupIdentifier = $input->getOption('group');
         }
         
-        if (null !== $input->getOption('list')) {
-            $output->writeln('list:' . $input->getOption('list'));
-            $action = self::CMD_ACTION_VIEW;
+        if (null !== $input->getOption('identifier')) {
+            $contentTypeIdentifier = $input->getOption('identifier');
         }
         
         
         // init services
         $this->initServices();
-        
+            
         // we need escalated privileges
-        $user = $this->userService->loadUser( $this->adminUserId );
-        $output->writeln('Operating repository as <info>'. $user->id . ':' . $user->login . '</info>');
-        $this->repository->setCurrentUser($user);
+        if ($this->adminUserId !== null) {
+            $user = $this->userService->loadUser($this->adminUserId);
+            $output->writeln('Operating repository as <info>' . $user->id . ':' . $user->login . '</info>');
+            $this->repository->setCurrentUser($user);
+        }
         
         $contentTypeGroups = $this->contentTypeService->loadContentTypeGroups();
         
@@ -109,7 +104,13 @@ EOF
         } else {
             if (!$this->isValidGroup($contentTypeGroupIdentifier, $contentTypeGroups))
                 throw new \InvalidArgumentException('Unknow Content Type Group '. $contentTypeGroupIdentifier);
-            $this->listContentTypes($output, $contentTypeGroupIdentifier);
+            if ($contentTypeIdentifier !== null) {
+                $contentType = $this->contentTypeService->loadContentTypeByIdentifier($contentTypeIdentifier);
+                $this->printContentType($output, $contentType);
+            } else {
+                $contentTypes = $this->contentTypeService->loadContentTypes($contentTypeGroupIdentifier);
+                $this->listContentTypes($output, $contentTypeGroupIdentifier, $contentTypes);
+            }
         }
         
         
@@ -130,34 +131,39 @@ EOF
     private function listContentTypeGroups(OutputInterface $output, $contentTypeGroups) {
         $output->writeln('<info>ContentType Groups:</info>');
         foreach ($contentTypeGroups as $k => $contentTypeGroup) {
-            $output->writeln('<info>' . $contentTypeGroup->identifier . '</info>');
+            $output->writeln('' . $contentTypeGroup->identifier . '');
         }
     }
+    
+    
+    private function printContentType(OutputInterface $output, $contentType) {
+        $output->writeln('<info>' . $contentType->id . ':' . $contentType->identifier . '</info> fields:' . count($contentType->fieldDefinitions));
+        $table = new Table($output);
+        $table->setHeaders(array(
+            'id',
+            'identifier',
+            'fieldType'
+        ));
+        foreach ($contentType->fieldDefinitions as $field) {
+            $table->addRow(array(
+                $field->id,
+                $field->identifier,
+                $field->fieldTypeIdentifier
+            ));
+        }
+        $table->render();
+    }
+    
 
     /**
      * 
      * @param OutputInterface $output
      * @param unknown $contentTypeGroup
      */
-    private function listContentTypes(OutputInterface $output, $contentTypeGroup) {
+    private function listContentTypes(OutputInterface $output, $contentTypeGroup, $contentTypes) {
         $output->writeln('<info>' . $contentTypeGroup->identifier . '</info> [ContentTypeGroup]:');
-        $contentTypes = $this->contentTypeService->loadContentTypes($contentTypeGroup);
         foreach ($contentTypes as $key => $contentType) {
-            $output->writeln('<info>' . $contentType->id . ':' . $contentType->identifier . '</info> fields:' . count($contentType->fieldDefinitions));
-            $table = new Table($output);
-            $table->setHeaders(array(
-                'id',
-                'identifier',
-                'fieldType'
-            ));
-            foreach ($contentType->fieldDefinitions as $field) {
-                $table->addRow(array(
-                    $field->id,
-                    $field->identifier,
-                    $field->fieldTypeIdentifier
-                ));
-            }
-            $table->render();
+            $this->printContentType($output, $contentType);
         }
     }
     
