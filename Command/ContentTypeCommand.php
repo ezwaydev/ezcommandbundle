@@ -105,7 +105,7 @@ EOF
         $contentTypeGroups = $this->contentTypeService->loadContentTypeGroups();
         
         if ($contentTypeGroupIdentifier === null ) {
-            $this->listContentTypeGroups($output);
+            $this->listContentTypeGroups($output, $contentTypeGroups);
         } else {
             if (!in_array($contentTypeGroupIdentifier, $contentTypeGroups))
                 throw new \InvalidArgumentException('Unknow Content Type Group '. $contentTypeGroupIdentifier);
@@ -120,7 +120,7 @@ EOF
      * 
      * @param OutputInterface $output
      */
-    private function listContentTypeGroups(OutputInterface $output) {
+    private function listContentTypeGroups(OutputInterface $output, $contentTypeGroups) {
         $output->writeln('<info>ContentType Groups:</info>');
         foreach ($contentTypeGroups as $k => $contentTypeGroup) {
             $output->writeln('<info>' . $contentTypeGroup->identifier . '</info>');
