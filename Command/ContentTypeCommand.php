@@ -107,13 +107,20 @@ EOF
         if ($contentTypeGroupIdentifier === null ) {
             $this->listContentTypeGroups($output, $contentTypeGroups);
         } else {
-            if (!in_array($contentTypeGroupIdentifier, $contentTypeGroups))
+            if (!$this->isValidGroup($contentTypeGroupIdentifier, $contentTypeGroups))
                 throw new \InvalidArgumentException('Unknow Content Type Group '. $contentTypeGroupIdentifier);
             $this->listContentTypes($output, $contentTypeGroupIdentifier);
         }
         
         
         $output->success('Done');
+    }
+    
+    private function isValidGroup($identifier, $groups) {
+        foreach ($groups as $k => $group) {
+            if ($identifier == $group->identifier) return true;
+        }
+        return false;
     }
     
     /**
